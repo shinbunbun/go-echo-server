@@ -1,35 +1,32 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net"
+	"net/http"
+	"net/rpc"
 )
 
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		panic(err)
-	}
-	if n == 0 {
-		return
-	}
-	_, err = conn.Write(buf[:n])
-	if err != nil {
-		panic(err)
-	}
+type EchoService struct{}
+
+func (s *EchoService) Echo(input string, output *string) error {
+	*output = input
+	return nil
 }
 
 func main() {
-	ln, err := net.Listen("tcp", ":8080")
+	print("Please input message: ")
+	var input string
+	fmt.Scanln(&input)
+	err := rpc.Register(new(EchoService))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			panic(err)
-		}
-		go handleConnection(conn)
+	rpc.HandleHTTP()
+	l, e := net.Listen("tcp", ":8080")
+	if e != nil {
+		log.Fatal("listen error:", e)
 	}
+	go http.Serve(l, nil)
 }
