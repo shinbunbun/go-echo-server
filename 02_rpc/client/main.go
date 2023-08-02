@@ -2,26 +2,22 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"log"
+	"net/rpc"
 )
 
 func main() {
 	print("Please input message: ")
 	var input string
 	fmt.Scanln(&input)
-	conn, err := net.Dial("tcp", "localhost:8080")
+	client, err := rpc.DialHTTP("tcp", "localhost:1234")
 	if err != nil {
-		panic(err)
+		log.Fatal("dialing:", err)
 	}
-	defer conn.Close()
-	_, err = conn.Write([]byte(input))
+	var reply string
+	err = client.Call("EchoService.Echo", input, &reply)
 	if err != nil {
-		panic(err)
+		log.Fatal("arith error:", err)
 	}
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(buf[:n]))
+	fmt.Println(reply)
 }
